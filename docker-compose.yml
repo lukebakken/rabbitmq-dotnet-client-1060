@@ -10,12 +10,11 @@ services:
   producer:
     build: producer
     depends_on:
-      - rabbitmq
+      - rmq
   consumer:
     build: consumer
     depends_on:
-      - rabbitmq
-  rabbitmq:
-    build: rabbitmq
-    hostname: rmq
-    image: rabbitmq:3-management
+      - rmq
+  rmq:
+    build: rmq
+    hostname: rabbitmq
