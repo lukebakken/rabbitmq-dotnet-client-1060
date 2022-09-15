@@ -9,8 +9,12 @@ networks:
 services:
   producer:
     build: producer
+    depends_on:
+      - rabbitmq
   consumer:
     build: consumer
+    depends_on:
+      - rabbitmq
   rabbitmq:
     build: rabbitmq
     hostname: rmq
