@@ -1,0 +1,17 @@
+version: '3'
+
+
+networks:
+  rabbitnet:
+    name: rabbitnet
+    driver: bridge
+
+services:
+  producer:
+    build: producer
+  consumer:
+    build: consumer
+  rabbitmq:
+    build: rabbitmq
+    hostname: rmq
+    image: rabbitmq:3-management
