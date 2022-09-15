@@ -6,7 +6,13 @@ using System.Text;
 Console.WriteLine("PRODUCER: waiting 5 seconds to try initial connection");
 Thread.Sleep(TimeSpan.FromSeconds(5));
 
-var factory = new ConnectionFactory() { HostName = "rabbitmq" };
+var factory = new ConnectionFactory()
+{
+    HostName = "rabbitmq",
+    Port = 5671
+};
+factory.Ssl.ServerName = "rabbitmq";
+factory.Ssl.Enabled = true;
 
 bool connected = false;
 
@@ -39,13 +45,12 @@ using (connection)
 
         channel.QueueDeclare(queue: "hello", durable: false, exclusive: false, autoDelete: false, arguments: null);
 
-        string message = "Hello World!";
-        var body = Encoding.UTF8.GetBytes(message);
-
         while (true)
         {
+            string message = DateTime.Now.ToString("MM/dd/yyyy hh:mm:ss.fff tt");
+            var body = Encoding.ASCII.GetBytes(message);
             channel.BasicPublish(exchange: "", routingKey: "hello", basicProperties: null, body: body);
-            Console.WriteLine($" [x] Sent {message}");
+            Console.WriteLine($"PRODUCER sent {message}");
             Thread.Sleep(TimeSpan.FromSeconds(5));
         }
     }

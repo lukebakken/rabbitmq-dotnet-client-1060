@@ -18,7 +18,13 @@ Console.CancelKeyPress += new ConsoleCancelEventHandler(CancelHandler);
 Console.WriteLine("CONSUMER: waiting 5 seconds to try initial connection");
 Thread.Sleep(TimeSpan.FromSeconds(5));
 
-var factory = new ConnectionFactory() { HostName = "rabbitmq" };
+var factory = new ConnectionFactory()
+{
+    HostName = "rabbitmq",
+    Port = 5671
+};
+factory.Ssl.ServerName = "rabbitmq";
+factory.Ssl.Enabled = true;
 
 bool connected = false;
 
@@ -57,8 +63,9 @@ using (connection)
             consumer.Received += (model, ea) =>
             {
                 var body = ea.Body.ToArray();
-                var message = Encoding.UTF8.GetString(body);
-                Console.WriteLine($" [x] Received {message}");
+                var message = Encoding.ASCII.GetString(body);
+                string now = DateTime.Now.ToString("MM/dd/yyyy hh:mm:ss.fff tt");
+                Console.WriteLine($"CONSUMER received {message} at {now}");
             };
 
             channel.BasicConsume(queue: "hello", autoAck: true, consumer: consumer);
