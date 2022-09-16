@@ -14,13 +14,15 @@ void CancelHandler(object? sender, ConsoleCancelEventArgs e)
 
 Console.CancelKeyPress += new ConsoleCancelEventHandler(CancelHandler);
 
+/*
 Console.WriteLine("CONSUMER: waiting 5 seconds to try initial connection");
 Thread.Sleep(TimeSpan.FromSeconds(5));
+*/
 
 var factory = new ConnectionFactory()
 {
-    UserName = "zyuser",
-    Password = "zypassword",
+    UserName = "guest",
+    Password = "guest",
     HostName = "localhost",
     Port = 5672
 };
@@ -63,9 +65,9 @@ using (connection)
             var consumer = new EventingBasicConsumer(channel);
             consumer.Received += (model, ea) =>
             {
+                DateTime received = DateTime.Now;
                 var body = ea.Body.ToArray();
                 string message = Encoding.ASCII.GetString(body);
-                DateTime received = DateTime.Now;
                 DateTime sent = DateTime.ParseExact(message, "MM/dd/yyyy hh:mm:ss.fff tt", null);
                 TimeSpan delay = received - sent;
                 string now = received.ToString("MM/dd/yyyy hh:mm:ss.fff tt");

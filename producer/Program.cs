@@ -1,15 +1,16 @@
-﻿using RabbitMQ.Client;
+﻿using System.Text;
+using RabbitMQ.Client;
 using RabbitMQ.Client.Exceptions;
 
-using System.Text;
-
+/*
 Console.WriteLine("PRODUCER: waiting 5 seconds to try initial connection");
 Thread.Sleep(TimeSpan.FromSeconds(5));
+*/
 
 var factory = new ConnectionFactory()
 {
-    UserName = "zyuser",
-    Password = "zypassword",
+    UserName = "guest",
+    Password = "guest",
     HostName = "localhost",
     Port = 5672
 };
