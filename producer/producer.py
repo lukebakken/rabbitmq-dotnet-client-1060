@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import logging
+import pickle
 import pika
+import time
 
 LOG_FORMAT = (
     "%(levelname) -10s %(asctime)s %(name) -30s %(funcName) "
@@ -25,9 +27,11 @@ def main():
     try:
         props = pika.BasicProperties(content_type='text/plain')
         while (True):
-            msg = "FOOBAR"
-            channel.basic_publish(exchange='', routing_key=queue_name, body=msg, properties=props)
-            LOGGER.info('sent msg: %s', msg)
+            t = time.time()
+            msg = str(t)
+            tp = pickle.dumps(t)
+            channel.basic_publish(exchange='', routing_key=queue_name, body=tp, properties=props)
+            LOGGER.info('PRODUCER sent %s', msg)
             connection.process_data_events(5)
     except KeyboardInterrupt:
         channel.close()
