@@ -7,4 +7,4 @@ name = "pypi"
 pika = "*"
 
 [scripts]
-main = 'python consumer.py'
+main = 'python producer.py'

@@ -28,6 +28,7 @@ def main():
             msg = "FOOBAR"
             channel.basic_publish(exchange='', routing_key=queue_name, body=msg, properties=props)
             LOGGER.info('sent msg: %s', msg)
+            connection.process_data_events(5)
     except KeyboardInterrupt:
         channel.close()
         connection.close()
