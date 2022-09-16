@@ -14,9 +14,12 @@ logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
 
 
 def main():
+    LOGGER.info("PRODUCER waiting 5 seconds to try initial connection")
+    time.sleep(5)
+
     queue_name = "hello"
     credentials = pika.PlainCredentials("guest", "guest")
-    parameters = pika.ConnectionParameters("localhost", credentials=credentials)
+    parameters = pika.ConnectionParameters("rabbitmq", credentials=credentials)
     connection = pika.BlockingConnection(parameters)
     channel = connection.channel()
 
@@ -25,13 +28,15 @@ def main():
     )
 
     try:
-        props = pika.BasicProperties(content_type='text/plain')
-        while (True):
+        props = pika.BasicProperties(content_type="text/plain")
+        while True:
             t = time.time()
             msg = str(t)
             tp = pickle.dumps(t)
-            channel.basic_publish(exchange='', routing_key=queue_name, body=tp, properties=props)
-            LOGGER.info('PRODUCER sent %s', msg)
+            channel.basic_publish(
+                exchange="", routing_key=queue_name, body=tp, properties=props
+            )
+            LOGGER.info("PRODUCER sent %s", msg)
             connection.process_data_events(5)
     except KeyboardInterrupt:
         channel.close()

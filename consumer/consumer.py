@@ -18,22 +18,27 @@ i = 0
 
 def on_message(chan, method_frame, _header_frame, body):
     global i
-    # LOGGER.info(
-    #     "Delivery properties: %s, message metadata: %s", method_frame, header_frame
-    # )
-    # LOGGER.info("Userdata: %s, message body: %s", userdata, body)
     dt = datetime.datetime.now()
     msg_dt = datetime.datetime.fromtimestamp(pickle.loads(body))
     delta = dt - msg_dt
     i = i + 1
-    LOGGER.info("CONSUMER received %s iteration %d at now %s - delay: %s ms", msg_dt, i, dt, delta)
+    LOGGER.info(
+        "CONSUMER received %s iteration %d at now %s - delta: %s",
+        msg_dt,
+        i,
+        dt,
+        delta,
+    )
     chan.basic_ack(delivery_tag=method_frame.delivery_tag)
 
 
 def main():
+    LOGGER.info("CONSUMER waiting 5 seconds to try initial connection")
+    time.sleep(5)
+
     queue_name = "hello"
     credentials = pika.PlainCredentials("guest", "guest")
-    parameters = pika.ConnectionParameters("localhost", credentials=credentials)
+    parameters = pika.ConnectionParameters("rabbitmq", credentials=credentials)
     connection = pika.BlockingConnection(parameters)
     channel = connection.channel()
 
