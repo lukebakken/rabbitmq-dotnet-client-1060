@@ -32,9 +32,23 @@ def on_message(chan, method_frame, _header_frame, body):
     chan.basic_ack(delivery_tag=method_frame.delivery_tag)
 
 
+def maybe_delay():
+    import ast
+    import os
+
+    env_container = os.getenv("PYTHON_RUNNING_IN_CONTAINER")
+    if env_container:
+        try:
+            in_container = ast.literal_eval(env_container.title())
+            if in_container:
+                LOGGER.info("CONSUMER waiting 5 seconds to try initial connection")
+                time.sleep(5)
+        except ValueError:
+            pass
+
+
 def main():
-    LOGGER.info("CONSUMER waiting 5 seconds to try initial connection")
-    time.sleep(5)
+    maybe_delay()
 
     queue_name = "hello"
     credentials = pika.PlainCredentials("guest", "guest")
