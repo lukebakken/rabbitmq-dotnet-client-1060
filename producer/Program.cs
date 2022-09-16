@@ -8,17 +8,17 @@ Thread.Sleep(TimeSpan.FromSeconds(5));
 
 var factory = new ConnectionFactory()
 {
-    HostName = "rabbitmq",
-    Port = 5671
+    UserName = "zyuser",
+    Password = "zypassword",
+    HostName = "localhost",
+    Port = 5672
 };
-factory.Ssl.ServerName = "rabbitmq";
-factory.Ssl.Enabled = true;
 
 bool connected = false;
 
 IConnection? connection = null;
 
-while(!connected)
+while (!connected)
 {
     try
     {

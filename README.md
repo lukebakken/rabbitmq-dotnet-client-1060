@@ -1,17 +1,22 @@
+Run RabbitMQ in docker on local PC with this command
+
+    docker run -d -p 5672:5672 -e RABBITMQ_DEFAULT_USER=zyuser -e RABBITMQ_DEFAULT_PASS=zypassword --rm rabbitmq
+
+1. Build the solution
+2. Run consumer.exe
+3. Run producer.exe
+
+Output will look like this:
+
 ```
-git clone https://github.com/lukebakken/rabbitmq-dotnet-client-1060.git
-cd rabbitmq-dotnet-client-1060
-git submodule update --init
-make certs
-docker compose build
-docker compose up
+CONSUMER: waiting 5 seconds to try initial connection
+CONSUMER: waiting for messages...
+CONSUMER received 09-16-2022 12:50:59.937  iteration 1 at 09-16-2022 12:50:59.975  - delay: 38,8116 ms
+CONSUMER received 09-16-2022 12:51:04.977  iteration 2 at 09-16-2022 12:51:04.984  - delay: 7,5664 ms
+CONSUMER received 09-16-2022 12:51:09.983  iteration 3 at 09-16-2022 12:51:09.985  - delay: 2,696 ms
+CONSUMER received 09-16-2022 12:51:14.996  iteration 4 at 09-16-2022 12:51:15.000  - delay: 4,8325 ms
+CONSUMER received 09-16-2022 12:51:20.013  iteration 5 at 09-16-2022 12:51:20.015  - delay: 2,8959 ms
+CONSUMER received 09-16-2022 12:51:25.014  iteration 6 at 09-16-2022 12:51:25.016  - delay: 2,616 ms
 ```
 
-If your build is sucessful, output will look like this:
-
-```
-rabbitmq-dotnet-client-1060-rmq-1       | 2022-09-15 22:23:06.428334+00:00 [info] <0.692.0> connection <0.692.0> (172.19.0.4:40866 -> 172.19.0.2:5671): user 'guest' authenticated and granted access to vhost '/'
-rabbitmq-dotnet-client-1060-consumer-1  | CONSUMER: waiting for messages...
-rabbitmq-dotnet-client-1060-consumer-1  | CONSUMER received 09/15/2022 10:23:06.282 PM at 09/15/2022 10:23:06.437 PM
-rabbitmq-dotnet-client-1060-producer-1  | PRODUCER sent 09/15/2022 10:23:11.285 PM
-```
+Delivery of first message is 4 - 5 times as slow as the subsequent messages.

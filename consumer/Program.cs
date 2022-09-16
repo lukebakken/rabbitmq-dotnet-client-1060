@@ -1,8 +1,7 @@
-﻿using RabbitMQ.Client;
+﻿using System.Text;
+using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using RabbitMQ.Client.Exceptions;
-
-using System.Text;
 
 AutoResetEvent latch = new AutoResetEvent(false);
 
@@ -20,17 +19,17 @@ Thread.Sleep(TimeSpan.FromSeconds(5));
 
 var factory = new ConnectionFactory()
 {
-    HostName = "rabbitmq",
-    Port = 5671
+    UserName = "zyuser",
+    Password = "zypassword",
+    HostName = "localhost",
+    Port = 5672
 };
-factory.Ssl.ServerName = "rabbitmq";
-factory.Ssl.Enabled = true;
 
 bool connected = false;
 
 IConnection? connection = null;
 
-while(!connected)
+while (!connected)
 {
     try
     {
@@ -53,6 +52,8 @@ using (connection)
     }
     else
     {
+        int i = 1;
+
         using (var channel = connection.CreateModel())
         {
             channel.QueueDeclare(queue: "hello", durable: false, exclusive: false, autoDelete: false, arguments: null);
@@ -63,9 +64,12 @@ using (connection)
             consumer.Received += (model, ea) =>
             {
                 var body = ea.Body.ToArray();
-                var message = Encoding.ASCII.GetString(body);
-                string now = DateTime.Now.ToString("MM/dd/yyyy hh:mm:ss.fff tt");
-                Console.WriteLine($"CONSUMER received {message} at {now}");
+                string message = Encoding.ASCII.GetString(body);
+                DateTime received = DateTime.Now;
+                DateTime sent = DateTime.ParseExact(message, "MM/dd/yyyy hh:mm:ss.fff tt", null);
+                TimeSpan delay = received - sent;
+                string now = received.ToString("MM/dd/yyyy hh:mm:ss.fff tt");
+                Console.WriteLine($"CONSUMER received {message} iteration {i++} at {now} - delay: {delay.TotalMilliseconds} ms");
             };
 
             channel.BasicConsume(queue: "hello", autoAck: true, consumer: consumer);
