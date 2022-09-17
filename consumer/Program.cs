@@ -66,10 +66,10 @@ using (connection)
                 var body = ea.Body.ToArray();
                 string message = Encoding.ASCII.GetString(body);
                 DateTime received = DateTime.Now;
-                DateTime sent = DateTime.ParseExact(message, "MM/dd/yyyy hh:mm:ss.fff tt", null);
+                DateTime sent = DateTime.ParseExact(message, "MM/dd/yyyy hh:mm:ss.fff", null);
                 TimeSpan delay = received - sent;
-                string now = received.ToString("MM/dd/yyyy hh:mm:ss.fff tt");
-                Console.WriteLine($"CONSUMER received {message} iteration {i++} at {now} - delay: {delay.TotalMilliseconds} ms");
+                string receivedText = received.ToString("MM/dd/yyyy hh:mm:ss.fff");
+                Console.WriteLine($"CONSUMER received at {receivedText}, sent at {message} - iteration: {i++}, delay: {delay.TotalMilliseconds} ms");
             };
 
             channel.BasicConsume(queue: "hello", autoAck: true, consumer: consumer);
