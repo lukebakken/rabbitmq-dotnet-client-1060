@@ -25,6 +25,7 @@ var factory = new ConnectionFactory()
     Port = 5672
 };
 
+bool useQuorumQueues = false;
 bool connected = false;
 
 IConnection? connection = null;
@@ -56,7 +57,11 @@ using (connection)
 
         using (var channel = connection.CreateModel())
         {
-            channel.QueueDeclare(queue: "hello", durable: false, exclusive: false, autoDelete: false, arguments: null);
+            Dictionary<string, object>? arguments = null;
+            if (useQuorumQueues)
+                arguments = new Dictionary<string, object> { { "x-queue-type", "quorum" } };
+
+            channel.QueueDeclare(queue: "hello", durable: useQuorumQueues, exclusive: false, autoDelete: false, arguments);
 
             Console.WriteLine("CONSUMER: waiting for messages...");
 
