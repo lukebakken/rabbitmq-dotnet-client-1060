@@ -66,9 +66,9 @@ using (connection)
                 var body = ea.Body.ToArray();
                 string message = Encoding.ASCII.GetString(body);
                 DateTime received = DateTime.Now;
-                DateTime sent = DateTime.ParseExact(message, "MM/dd/yyyy hh:mm:ss.fff", null);
+                DateTime sent = DateTime.ParseExact(message, "MM/dd/yyyy HH:mm:ss.fff", null);
                 TimeSpan delay = received - sent;
-                string receivedText = received.ToString("MM/dd/yyyy hh:mm:ss.fff");
+                string receivedText = received.ToString("MM/dd/yyyy HH:mm:ss.fff");
                 Console.WriteLine($"CONSUMER received at {receivedText}, sent at {message} - iteration: {i++}, delay: {delay.TotalMilliseconds} ms");
             };
 
