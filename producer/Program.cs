@@ -23,25 +23,25 @@ var factory = new ConnectionFactory()
 bool useQuorumQueues = false;
 bool connected = false;
 
-IConnection? connection = null;
-
-while (!connected)
+for (ushort iteration = 0; iteration < 2; iteration++)
 {
-    try
+    IConnection? connection = null;
+    IModel? channel = null;
+    while (!connected)
     {
-        connection = factory.CreateConnection();
-        connected = true;
+        try
+        {
+            connection = factory.CreateConnection();
+            connected = true;
+        }
+        catch (BrokerUnreachableException)
+        {
+            connected = false;
+            Console.WriteLine("PRODUCER: waiting 5 seconds to re-try connection!");
+            Thread.Sleep(TimeSpan.FromSeconds(5));
+        }
     }
-    catch (BrokerUnreachableException)
-    {
-        connected = false;
-        Console.WriteLine("PRODUCER: waiting 5 seconds to re-try connection!");
-        Thread.Sleep(TimeSpan.FromSeconds(5));
-    }
-}
 
-using (connection)
-{
     if (connection == null)
     {
         Console.Error.WriteLine("PRODUCER: unexpected null connection");
@@ -49,8 +49,7 @@ using (connection)
     else
     {
         int i = 1;
-        using var channel = connection.CreateModel();
-
+        channel = connection.CreateModel();
         Dictionary<string, object>? arguments = null;
         if (useQuorumQueues)
         {
@@ -70,18 +69,36 @@ using (connection)
             channel.BasicPublish(exchange: "", routingKey: "hello", basicProperties: null, body: body);
             Console.WriteLine($"PRODUCER sent {message} - iteration {i++}");
 
-            if (Console.KeyAvailable) 
+            if (iteration == 0)
             {
-                ConsoleKeyInfo keyInfo = Console.ReadKey(true);
-                if (keyInfo.Key == ConsoleKey.Enter)
-                {
-                    Console.WriteLine("Send loop paused. Press any key to resume or CTRL-C to exit");
-                    Console.ReadKey(true);
-                }
+                /*
+                * Note: this is the "warm up" iteration
+                */
+                Console.WriteLine($"PRODUCER first iteration done, disconnecting");
+                channel?.Close();
+                connection?.Close();
+                connected = false;
+                channel = null;
+                connection = null;
+                Console.WriteLine($"PRODUCER re-connecting in 10 seconds...");
+                Thread.Sleep(TimeSpan.FromSeconds(10));
+                break;
             }
             else
             {
-                Thread.Sleep(TimeSpan.FromSeconds(5));
+                if (Console.KeyAvailable) 
+                {
+                    ConsoleKeyInfo keyInfo = Console.ReadKey(true);
+                    if (keyInfo.Key == ConsoleKey.Enter)
+                    {
+                        Console.WriteLine("Send loop paused. Press any key to resume or CTRL-C to exit");
+                        Console.ReadKey(true);
+                    }
+                }
+                else
+                {
+                    Thread.Sleep(TimeSpan.FromSeconds(3));
+                }
             }
         }
     }

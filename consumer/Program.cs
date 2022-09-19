@@ -3,6 +3,16 @@ using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using RabbitMQ.Client.Exceptions;
 
+bool inContainer = false;
+if (bool.TryParse(Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER"), out inContainer))
+{
+    if (inContainer)
+    {
+        Console.WriteLine("CONSUMER: waiting 5 seconds to try initial connection");
+        Thread.Sleep(TimeSpan.FromSeconds(5));
+    }
+}
+
 AutoResetEvent latch = new AutoResetEvent(false);
 
 void CancelHandler(object? sender, ConsoleCancelEventArgs e)
@@ -13,16 +23,6 @@ void CancelHandler(object? sender, ConsoleCancelEventArgs e)
 }
 
 Console.CancelKeyPress += new ConsoleCancelEventHandler(CancelHandler);
-
-bool inContainer = false;
-if (bool.TryParse(Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER"), out inContainer))
-{
-    if (inContainer)
-    {
-        Console.WriteLine("CONSUMER: waiting 5 seconds to try initial connection");
-        Thread.Sleep(TimeSpan.FromSeconds(5));
-    }
-}
 
 var factory = new ConnectionFactory()
 {
@@ -35,25 +35,24 @@ var factory = new ConnectionFactory()
 bool useQuorumQueues = false;
 bool connected = false;
 
-IConnection? connection = null;
-
-while (!connected)
+for (ushort iteration = 0; iteration < 2; iteration++)
 {
-    try
+    IConnection? connection = null;
+    while (!connected)
     {
-        connection = factory.CreateConnection();
-        connected = true;
+        try
+        {
+            connection = factory.CreateConnection();
+            connected = true;
+        }
+        catch (BrokerUnreachableException)
+        {
+            connected = false;
+            Console.WriteLine("CONSUMER: waiting 5 seconds to re-try connection!");
+            Thread.Sleep(TimeSpan.FromSeconds(5));
+        }
     }
-    catch (BrokerUnreachableException)
-    {
-        connected = false;
-        Console.WriteLine("CONSUMER: waiting 5 seconds to re-try connection!");
-        Thread.Sleep(TimeSpan.FromSeconds(5));
-    }
-}
 
-using (connection)
-{
     if (connection == null)
     {
         Console.Error.WriteLine("CONSUMER: unexpected null connection");
@@ -61,32 +60,63 @@ using (connection)
     else
     {
         int i = 1;
-
-        using (var channel = connection.CreateModel())
+        var channel = connection.CreateModel();
+        Dictionary<string, object>? arguments = null;
+        if (useQuorumQueues)
         {
-            Dictionary<string, object>? arguments = null;
-            if (useQuorumQueues)
+            arguments = new Dictionary<string, object> { { "x-queue-type", "quorum" } };
+        }
+        channel.QueueDeclare(queue: "hello", durable: true, exclusive: false, autoDelete: false, arguments);
+
+        Console.WriteLine("CONSUMER: waiting for messages...");
+
+        var consumer = new EventingBasicConsumer(channel);
+        consumer.Received += (model, ea) =>
+        {
+            DateTime received = DateTime.Now;
+            var body = ea.Body.ToArray();
+            string message = Encoding.ASCII.GetString(body);
+            DateTime sent = DateTime.ParseExact(message, "MM/dd/yyyy HH:mm:ss.ffffff", null);
+            TimeSpan delay = received - sent;
+            string receivedText = received.ToString("MM/dd/yyyy HH:mm:ss.ffffff");
+            Console.WriteLine($"CONSUMER received at {receivedText}, sent at {message} - iteration: {i++}, delay: {delay}");
+        };
+
+        if (iteration == 0)
+        {
+            /*
+            * Note: this is the "warm up" iteration
+            */
+
+            BasicGetResult result;
+            do
             {
-                arguments = new Dictionary<string, object> { { "x-queue-type", "quorum" } };
+                result = channel.BasicGet(queue: "hello", autoAck: true);
+                if (result == null)
+                {
+                    Console.WriteLine($"CONSUMER first iteration - waiting for one message");
+                    if (latch.WaitOne(TimeSpan.FromSeconds(1)))
+                    {
+                        Environment.Exit(0);
+                    }
+                }
+                else
+                {
+                    break;
+                }
             }
-            channel.QueueDeclare(queue: "hello", durable: true, exclusive: false, autoDelete: false, arguments);
+            while (true);
 
-            Console.WriteLine("CONSUMER: waiting for messages...");
-
-            var consumer = new EventingBasicConsumer(channel);
-            consumer.Received += (model, ea) =>
-            {
-                DateTime received = DateTime.Now;
-                var body = ea.Body.ToArray();
-                string message = Encoding.ASCII.GetString(body);
-                DateTime sent = DateTime.ParseExact(message, "MM/dd/yyyy HH:mm:ss.ffffff", null);
-                TimeSpan delay = received - sent;
-                string receivedText = received.ToString("MM/dd/yyyy HH:mm:ss.ffffff");
-                Console.WriteLine($"CONSUMER received at {receivedText}, sent at {message} - iteration: {i++}, delay: {delay}");
-            };
-
+            var body = result.Body.ToArray();
+            string message = Encoding.ASCII.GetString(body);
+            Console.WriteLine($"CONSUMER first iteration done (message: {message}), disconnecting and re-connecting...");
+            channel.Close();
+            connection.Close();
+            connected = false;
+        }
+        else
+        {
             channel.BasicConsume(queue: "hello", autoAck: true, consumer: consumer);
-
             latch.WaitOne();
         }
     }
