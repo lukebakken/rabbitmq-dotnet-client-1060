@@ -15,6 +15,7 @@ var factory = new ConnectionFactory()
     Port = 5672
 };
 
+bool useQuorumQueues = false;
 bool connected = false;
 
 IConnection? connection = null;
@@ -42,17 +43,39 @@ using (connection)
     }
     else
     {
+        int i = 1;
         using var channel = connection.CreateModel();
 
-        channel.QueueDeclare(queue: "hello", durable: false, exclusive: false, autoDelete: false, arguments: null);
+        Dictionary<string, object>? arguments = null;
+        if (useQuorumQueues)
+            arguments = new Dictionary<string, object> { { "x-queue-type", "quorum" } };
+
+        channel.QueueDeclare(queue: "hello", durable: useQuorumQueues, exclusive: false, autoDelete: false, arguments);
+
+        Console.WriteLine();
+        Console.WriteLine("Press ENTER to pause / resume send loop, or CTRL-C to exit");
+        Console.WriteLine();
 
         while (true)
         {
-            string message = DateTime.Now.ToString("MM/dd/yyyy hh:mm:ss.fff tt");
+            string message = DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss.fff");
             var body = Encoding.ASCII.GetBytes(message);
             channel.BasicPublish(exchange: "", routingKey: "hello", basicProperties: null, body: body);
-            Console.WriteLine($"PRODUCER sent {message}");
-            Thread.Sleep(TimeSpan.FromSeconds(5));
+            Console.WriteLine($"PRODUCER sent {message} - iteration {i++}");
+
+            if (Console.KeyAvailable) 
+            {
+                ConsoleKeyInfo keyInfo = Console.ReadKey(true);
+                if (keyInfo.Key == ConsoleKey.Enter)
+                {
+                    Console.WriteLine("Send loop paused. Press any key to resume or CTRL-C to exit");
+                    Console.ReadKey(true);
+                }
+            }
+            else
+            {
+                Thread.Sleep(TimeSpan.FromSeconds(5));
+            }
         }
     }
 }
