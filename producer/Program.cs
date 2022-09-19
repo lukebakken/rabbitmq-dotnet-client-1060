@@ -2,10 +2,15 @@
 using RabbitMQ.Client;
 using RabbitMQ.Client.Exceptions;
 
-/*
-Console.WriteLine("PRODUCER: waiting 5 seconds to try initial connection");
-Thread.Sleep(TimeSpan.FromSeconds(5));
-*/
+bool inContainer = false;
+if (bool.TryParse(Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER"), out inContainer))
+{
+    if (inContainer)
+    {
+        Console.WriteLine("CONSUMER: waiting 5 seconds to try initial connection");
+        Thread.Sleep(TimeSpan.FromSeconds(5));
+    }
+}
 
 var factory = new ConnectionFactory()
 {
