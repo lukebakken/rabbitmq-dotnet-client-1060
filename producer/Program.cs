@@ -53,9 +53,11 @@ using (connection)
 
         Dictionary<string, object>? arguments = null;
         if (useQuorumQueues)
+        {
             arguments = new Dictionary<string, object> { { "x-queue-type", "quorum" } };
+        }
 
-        channel.QueueDeclare(queue: "hello", durable: useQuorumQueues, exclusive: false, autoDelete: false, arguments);
+        channel.QueueDeclare(queue: "hello", durable: true, exclusive: false, autoDelete: false, arguments);
 
         Console.WriteLine();
         Console.WriteLine("Press ENTER to pause / resume send loop, or CTRL-C to exit");
@@ -63,7 +65,7 @@ using (connection)
 
         while (true)
         {
-            string message = DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss.fff");
+            string message = DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss.ffffff");
             var body = Encoding.ASCII.GetBytes(message);
             channel.BasicPublish(exchange: "", routingKey: "hello", basicProperties: null, body: body);
             Console.WriteLine($"PRODUCER sent {message} - iteration {i++}");

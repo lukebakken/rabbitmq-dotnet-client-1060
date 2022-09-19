@@ -66,9 +66,10 @@ using (connection)
         {
             Dictionary<string, object>? arguments = null;
             if (useQuorumQueues)
+            {
                 arguments = new Dictionary<string, object> { { "x-queue-type", "quorum" } };
-
-            channel.QueueDeclare(queue: "hello", durable: useQuorumQueues, exclusive: false, autoDelete: false, arguments);
+            }
+            channel.QueueDeclare(queue: "hello", durable: true, exclusive: false, autoDelete: false, arguments);
 
             Console.WriteLine("CONSUMER: waiting for messages...");
 
@@ -78,10 +79,10 @@ using (connection)
                 DateTime received = DateTime.Now;
                 var body = ea.Body.ToArray();
                 string message = Encoding.ASCII.GetString(body);
-                DateTime sent = DateTime.ParseExact(message, "MM/dd/yyyy HH:mm:ss.fff", null);
+                DateTime sent = DateTime.ParseExact(message, "MM/dd/yyyy HH:mm:ss.ffffff", null);
                 TimeSpan delay = received - sent;
-                string receivedText = received.ToString("MM/dd/yyyy HH:mm:ss.fff");
-                Console.WriteLine($"CONSUMER received at {receivedText}, sent at {message} - iteration: {i++}, delay: {delay.TotalMilliseconds} ms");
+                string receivedText = received.ToString("MM/dd/yyyy HH:mm:ss.ffffff");
+                Console.WriteLine($"CONSUMER received at {receivedText}, sent at {message} - iteration: {i++}, delay: {delay}");
             };
 
             channel.BasicConsume(queue: "hello", autoAck: true, consumer: consumer);
