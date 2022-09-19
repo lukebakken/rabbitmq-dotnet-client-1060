@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import datetime
 import logging
-import pickle
 import pika
 import time
 
@@ -19,7 +18,8 @@ i = 0
 def on_message(chan, method_frame, _header_frame, body):
     global i
     dt = datetime.datetime.now()
-    msg_dt = datetime.datetime.fromtimestamp(pickle.loads(body))
+    # DateTime sent = DateTime.ParseExact(message, "MM/dd/yyyy HH:mm:ss.fff", null);
+    msg_dt = datetime.datetime.strptime(body.decode('ascii'), "%m/%d/%Y %H:%M:%S.%f")
     delta = dt - msg_dt
     i = i + 1
     LOGGER.info(

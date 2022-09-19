@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import logging
-import pickle
 import pika
+import datetime
 import time
 
 LOG_FORMAT = (
@@ -44,13 +44,12 @@ def main():
     try:
         props = pika.BasicProperties(content_type="text/plain")
         while True:
-            t = time.time()
-            msg = str(t)
-            tp = pickle.dumps(t)
+            # DateTime sent = DateTime.ParseExact(message, "MM/dd/yyyy HH:mm:ss.fff", null);
+            dt = datetime.datetime.now().strftime("%m/%d/%Y %H:%M:%S.%f")
             channel.basic_publish(
-                exchange="", routing_key=queue_name, body=tp, properties=props
+                exchange="", routing_key=queue_name, body=dt, properties=props
             )
-            LOGGER.info("PRODUCER sent %s", msg)
+            LOGGER.info("PRODUCER sent %s", dt)
             connection.process_data_events(5)
     except KeyboardInterrupt:
         channel.close()
