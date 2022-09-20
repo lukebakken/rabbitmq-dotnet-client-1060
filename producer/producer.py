@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
+import datetime
 import logging
 import pickle
 import pika
+import random
 import time
 
 LOG_FORMAT = (
@@ -42,15 +44,19 @@ def main():
     )
 
     try:
+        messageCounter = 0
         props = pika.BasicProperties(content_type="text/plain")
         while True:
-            t = time.time()
-            msg = str(t)
-            tp = pickle.dumps(t)
-            channel.basic_publish(
-                exchange="", routing_key=queue_name, body=tp, properties=props
-            )
-            LOGGER.info("PRODUCER sent %s", msg)
+            burstSize = random.randrange(10)
+            for _ in range(burstSize):
+                messageCounter = messageCounter + 1
+                t = time.time()
+                tp = pickle.dumps(t)
+                channel.basic_publish(
+                    exchange="", routing_key=queue_name, body=tp, properties=props
+                )
+                sendTime = datetime.datetime.fromtimestamp(t)
+                LOGGER.info("PRODUCER sent message %d at %s", messageCounter, sendTime);
             connection.process_data_events(5)
     except KeyboardInterrupt:
         channel.close()

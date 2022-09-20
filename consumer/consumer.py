@@ -13,21 +13,21 @@ LOGGER = logging.getLogger(__name__)
 
 logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
 
-i = 0
+messageCounter = 0
 
 
 def on_message(chan, method_frame, _header_frame, body):
-    global i
-    dt = datetime.datetime.now()
-    msg_dt = datetime.datetime.fromtimestamp(pickle.loads(body))
-    delta = dt - msg_dt
-    i = i + 1
+    global messageCounter
+    received = datetime.datetime.now()
+    sent = datetime.datetime.fromtimestamp(pickle.loads(body))
+    delay = received - sent
+    messageCounter = messageCounter + 1
     LOGGER.info(
-        "CONSUMER received %s iteration %d at now %s - delta: %s",
-        msg_dt,
-        i,
-        dt,
-        delta,
+        "CONSUMER received at %s, sent at %s - iteration %d, delay: %s",
+        received,
+        sent,
+        messageCounter,
+        delay,
     )
     chan.basic_ack(delivery_tag=method_frame.delivery_tag)
 
