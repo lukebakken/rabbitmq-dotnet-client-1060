@@ -83,7 +83,7 @@ using (connection)
                 DateTime sent = DateTime.ParseExact(message, "MM/dd/yyyy HH:mm:ss.ffffff", null);
                 TimeSpan delay = received - sent;
                 string receivedText = received.ToString("MM/dd/yyyy HH:mm:ss.ffffff");
-                Console.WriteLine($"CONSUMER received at {receivedText}, sent at {message} - iteration: {messageCounter++}, delay: {delay}");
+                Console.WriteLine($"CONSUMER received at {receivedText}, sent at {message} - iteration: {messageCounter}, delay: {delay}");
             };
 
             channel.BasicConsume(queue: "hello", autoAck: true, consumer: consumer);
