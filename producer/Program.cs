@@ -24,6 +24,7 @@ bool useQuorumQueues = false;
 bool connected = false;
 
 IConnection? connection = null;
+Random randomGenerator = new Random();
 
 while (!connected)
 {
@@ -48,7 +49,7 @@ using (connection)
     }
     else
     {
-        int i = 1;
+        int messageCounter = 0;
         using var channel = connection.CreateModel();
 
         Dictionary<string, object>? arguments = null;
@@ -65,24 +66,18 @@ using (connection)
 
         while (true)
         {
-            string message = DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss.ffffff");
-            var body = Encoding.ASCII.GetBytes(message);
-            channel.BasicPublish(exchange: "", routingKey: "hello", basicProperties: null, body: body);
-            Console.WriteLine($"PRODUCER sent {message} - iteration {i++}");
+            int burstSize = randomGenerator.Next(1, 10);
+            for (int n = 0; n < burstSize; n++)
+            {
+                messageCounter++;
+                string sendTime = DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss.ffffff");
+                var body = Encoding.ASCII.GetBytes(sendTime);
+                channel.BasicPublish(exchange: "", routingKey: "hello", basicProperties: null, body: body);
+                Console.WriteLine($"PRODUCER sent message {messageCounter} at {sendTime}");
+            }
 
-            if (Console.KeyAvailable) 
-            {
-                ConsoleKeyInfo keyInfo = Console.ReadKey(true);
-                if (keyInfo.Key == ConsoleKey.Enter)
-                {
-                    Console.WriteLine("Send loop paused. Press any key to resume or CTRL-C to exit");
-                    Console.ReadKey(true);
-                }
-            }
-            else
-            {
-                Thread.Sleep(TimeSpan.FromSeconds(5));
-            }
+            Console.WriteLine();
+            Thread.Sleep(TimeSpan.FromSeconds(5));
         }
     }
 }

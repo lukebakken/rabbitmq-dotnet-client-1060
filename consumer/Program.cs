@@ -60,7 +60,7 @@ using (connection)
     }
     else
     {
-        int i = 1;
+        int messageCounter = 0;
 
         using (var channel = connection.CreateModel())
         {
@@ -77,12 +77,13 @@ using (connection)
             consumer.Received += (model, ea) =>
             {
                 DateTime received = DateTime.Now;
+                messageCounter++;
                 var body = ea.Body.ToArray();
                 string message = Encoding.ASCII.GetString(body);
                 DateTime sent = DateTime.ParseExact(message, "MM/dd/yyyy HH:mm:ss.ffffff", null);
                 TimeSpan delay = received - sent;
                 string receivedText = received.ToString("MM/dd/yyyy HH:mm:ss.ffffff");
-                Console.WriteLine($"CONSUMER received at {receivedText}, sent at {message} - iteration: {i++}, delay: {delay}");
+                Console.WriteLine($"CONSUMER received at {receivedText}, sent at {message} - iteration: {messageCounter++}, delay: {delay}");
             };
 
             channel.BasicConsume(queue: "hello", autoAck: true, consumer: consumer);
