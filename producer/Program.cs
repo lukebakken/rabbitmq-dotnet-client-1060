@@ -30,14 +30,14 @@ while (!connected)
 {
     try
     {
-        connection = factory.CreateConnection();
+        connection = await factory.CreateConnectionAsync();
         connected = true;
     }
     catch (BrokerUnreachableException)
     {
         connected = false;
         Console.WriteLine("PRODUCER: waiting 5 seconds to re-try connection!");
-        Thread.Sleep(TimeSpan.FromSeconds(5));
+        await Task.Delay(TimeSpan.FromSeconds(5));
     }
 }
 
@@ -50,7 +50,7 @@ using (connection)
     else
     {
         int messageCounter = 0;
-        using var channel = connection.CreateModel();
+        using IChannel channel = await connection.CreateChannelAsync();
 
         Dictionary<string, object>? arguments = null;
         if (useQuorumQueues)
@@ -58,7 +58,7 @@ using (connection)
             arguments = new Dictionary<string, object> { { "x-queue-type", "quorum" } };
         }
 
-        channel.QueueDeclare(queue: "hello", durable: true, exclusive: false, autoDelete: false, arguments);
+        await channel.QueueDeclareAsync(queue: "hello", durable: true, exclusive: false, autoDelete: false, arguments);
 
         Console.WriteLine();
         Console.WriteLine("Press ENTER to pause / resume send loop, or CTRL-C to exit");
@@ -72,12 +72,12 @@ using (connection)
                 messageCounter++;
                 string sendTime = DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss.ffffff");
                 var body = Encoding.ASCII.GetBytes(sendTime);
-                channel.BasicPublish(exchange: "", routingKey: "hello", basicProperties: null, body: body);
+                await channel.BasicPublishAsync(exchange: "", routingKey: "hello", body: body);
                 Console.WriteLine($"PRODUCER sent message {messageCounter} at {sendTime}");
             }
 
             Console.WriteLine();
-            Thread.Sleep(TimeSpan.FromSeconds(5));
+            await Task.Delay(TimeSpan.FromSeconds(5));
         }
     }
 }

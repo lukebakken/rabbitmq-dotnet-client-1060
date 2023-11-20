@@ -29,7 +29,8 @@ var factory = new ConnectionFactory()
     UserName = "guest",
     Password = "guest",
     HostName = "localhost",
-    Port = 5672
+    Port = 5672,
+    DispatchConsumersAsync = true
 };
 
 bool useQuorumQueues = false;
@@ -41,7 +42,7 @@ while (!connected)
 {
     try
     {
-        connection = factory.CreateConnection();
+        connection = await factory.CreateConnectionAsync();
         connected = true;
     }
     catch (BrokerUnreachableException)
@@ -62,19 +63,20 @@ using (connection)
     {
         int messageCounter = 0;
 
-        using (var channel = connection.CreateModel())
+        using (IChannel channel = await connection.CreateChannelAsync())
         {
             Dictionary<string, object>? arguments = null;
             if (useQuorumQueues)
             {
                 arguments = new Dictionary<string, object> { { "x-queue-type", "quorum" } };
             }
-            channel.QueueDeclare(queue: "hello", durable: true, exclusive: false, autoDelete: false, arguments);
+
+            await channel.QueueDeclareAsync(queue: "hello", passive:false, durable: true, exclusive: false, autoDelete: false, arguments);
 
             Console.WriteLine("CONSUMER: waiting for messages...");
 
-            var consumer = new EventingBasicConsumer(channel);
-            consumer.Received += (model, ea) =>
+            var consumer = new AsyncEventingBasicConsumer(channel);
+            consumer.Received += async (model, ea) =>
             {
                 DateTime received = DateTime.Now;
                 messageCounter++;
@@ -84,9 +86,10 @@ using (connection)
                 TimeSpan delay = received - sent;
                 string receivedText = received.ToString("MM/dd/yyyy HH:mm:ss.ffffff");
                 Console.WriteLine($"CONSUMER received at {receivedText}, sent at {message} - iteration: {messageCounter}, delay: {delay}");
+                await Task.Yield();
             };
 
-            channel.BasicConsume(queue: "hello", autoAck: true, consumer: consumer);
+            await channel.BasicConsumeAsync(queue: "hello", autoAck: true, consumer: consumer);
 
             latch.WaitOne();
         }
