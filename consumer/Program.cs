@@ -9,7 +9,7 @@ if (bool.TryParse(Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINE
     if (inContainer)
     {
         Console.WriteLine("CONSUMER: waiting 5 seconds to try initial connection");
-        Thread.Sleep(TimeSpan.FromSeconds(5));
+        await Task.Delay(TimeSpan.FromSeconds(5));
     }
 }
 
@@ -42,14 +42,14 @@ for (ushort iteration = 0; iteration < 2; iteration++)
     {
         try
         {
-            connection = factory.CreateConnection();
+            connection = await factory.CreateConnectionAsync();
             connected = true;
         }
         catch (BrokerUnreachableException)
         {
             connected = false;
             Console.WriteLine("CONSUMER: waiting 5 seconds to re-try connection!");
-            Thread.Sleep(TimeSpan.FromSeconds(5));
+            await Task.Delay(TimeSpan.FromSeconds(5));
         }
     }
 
@@ -60,13 +60,13 @@ for (ushort iteration = 0; iteration < 2; iteration++)
     else
     {
         int i = 1;
-        var channel = connection.CreateModel();
+        IChannel channel = await connection.CreateChannelAsync();
         Dictionary<string, object>? arguments = null;
         if (useQuorumQueues)
         {
             arguments = new Dictionary<string, object> { { "x-queue-type", "quorum" } };
         }
-        channel.QueueDeclare(queue: "hello", durable: true, exclusive: false, autoDelete: false, arguments);
+        await channel.QueueDeclareAsync(queue: "hello", durable: true, exclusive: false, autoDelete: false, arguments);
 
         Console.WriteLine("CONSUMER: waiting for messages...");
 
@@ -91,7 +91,7 @@ for (ushort iteration = 0; iteration < 2; iteration++)
             BasicGetResult result;
             do
             {
-                result = channel.BasicGet(queue: "hello", autoAck: true);
+                result = await channel.BasicGetAsync(queue: "hello", autoAck: true);
                 if (result == null)
                 {
                     Console.WriteLine($"CONSUMER first iteration - waiting for one message");
@@ -116,7 +116,7 @@ for (ushort iteration = 0; iteration < 2; iteration++)
         }
         else
         {
-            channel.BasicConsume(queue: "hello", autoAck: true, consumer: consumer);
+            await channel.BasicConsumeAsync(queue: "hello", autoAck: true, consumer: consumer);
             latch.WaitOne();
         }
     }

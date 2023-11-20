@@ -8,7 +8,7 @@ if (bool.TryParse(Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINE
     if (inContainer)
     {
         Console.WriteLine("CONSUMER: waiting 5 seconds to try initial connection");
-        Thread.Sleep(TimeSpan.FromSeconds(5));
+        await Task.Delay(TimeSpan.FromSeconds(5));
     }
 }
 
@@ -26,19 +26,19 @@ bool connected = false;
 for (ushort iteration = 0; iteration < 2; iteration++)
 {
     IConnection? connection = null;
-    IModel? channel = null;
+    IChannel? channel = null;
     while (!connected)
     {
         try
         {
-            connection = factory.CreateConnection();
+            connection = await factory.CreateConnectionAsync();
             connected = true;
         }
         catch (BrokerUnreachableException)
         {
             connected = false;
             Console.WriteLine("PRODUCER: waiting 5 seconds to re-try connection!");
-            Thread.Sleep(TimeSpan.FromSeconds(5));
+            await Task.Delay(TimeSpan.FromSeconds(5));
         }
     }
 
@@ -49,7 +49,7 @@ for (ushort iteration = 0; iteration < 2; iteration++)
     else
     {
         int i = 1;
-        channel = connection.CreateModel();
+        channel = await connection.CreateChannelAsync();
         Dictionary<string, object>? arguments = null;
         if (useQuorumQueues)
         {
@@ -66,7 +66,7 @@ for (ushort iteration = 0; iteration < 2; iteration++)
         {
             string message = DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss.ffffff");
             var body = Encoding.ASCII.GetBytes(message);
-            channel.BasicPublish(exchange: "", routingKey: "hello", basicProperties: null, body: body);
+            await channel.BasicPublishAsync(exchange: "", routingKey: "hello", body: body);
             Console.WriteLine($"PRODUCER sent {message} - iteration {i++}");
 
             if (iteration == 0)
@@ -81,7 +81,7 @@ for (ushort iteration = 0; iteration < 2; iteration++)
                 channel = null;
                 connection = null;
                 Console.WriteLine($"PRODUCER re-connecting in 10 seconds...");
-                Thread.Sleep(TimeSpan.FromSeconds(10));
+                await Task.Delay(TimeSpan.FromSeconds(10));
                 break;
             }
             else
@@ -97,7 +97,7 @@ for (ushort iteration = 0; iteration < 2; iteration++)
                 }
                 else
                 {
-                    Thread.Sleep(TimeSpan.FromSeconds(3));
+                    await Task.Delay(TimeSpan.FromSeconds(3));
                 }
             }
         }
